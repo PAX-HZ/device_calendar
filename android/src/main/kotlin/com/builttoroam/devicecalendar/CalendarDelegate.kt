@@ -429,8 +429,13 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
         values.put(Events.ALL_DAY, event.allDay)
 
         if (event.allDay) {
+            // All day events must have UTC timezone. Note: we don't need to set the
+            // utc timezone for the Calendars here. We just need to set it in the Event.
+            val utcTimeZone = TimeZone.getTimeZone("UTC")
+
             val calendarStart = java.util.Calendar.getInstance()
             calendarStart.timeInMillis = event.start!!
+            calendarStart.timeZone = utcTimeZone
             calendarStart.set(java.util.Calendar.HOUR, 0)
             calendarStart.set(java.util.Calendar.MINUTE, 0)
             calendarStart.set(java.util.Calendar.SECOND, 0)
@@ -439,6 +444,7 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             // All Day events can span multiple days, but must also end at midnight
             val calendarEnd = java.util.Calendar.getInstance()
             calendarEnd.timeInMillis = event.end!!
+            calendarEnd.timeZone = utcTimeZone
             calendarEnd.set(java.util.Calendar.HOUR, 0)
             calendarEnd.set(java.util.Calendar.MINUTE, 0)
             calendarEnd.set(java.util.Calendar.SECOND, 0)
@@ -447,10 +453,6 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             // Add one day to the end date since All-Day events in Calendar Provider end at
             // midnight at the beginning of the next day.
             calendarEnd.add(java.util.Calendar.DATE, 1)
-
-            // All day events must have UTC timezone. Note: we don't need to set the
-            // utc timezone for the Calendars here. We just need to set it in the Event.
-            val utcTimeZone = TimeZone.getTimeZone("UTC")
 
             values.put(Events.DTSTART, calendarStart.timeInMillis)
             values.put(Events.DTEND, calendarEnd.timeInMillis)
