@@ -112,9 +112,9 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
         }
 
         val cachedValues: CalendarMethodsParametersCacheModel = _cachedParametersMap[requestCode]
-          ?: // unlikely scenario where another plugin is potentially using the same request code but it's not one we are tracking so return to
-          // indicate we're not handling the request
-          return false
+                ?: // unlikely scenario where another plugin is potentially using the same request code but it's not one we are tracking so return to
+                // indicate we're not handling the request
+                return false
 
         try {
             if (!permissionGranted) {
@@ -241,10 +241,10 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
 
         var uri = CalendarContract.Calendars.CONTENT_URI
         uri = uri.buildUpon()
-          .appendQueryParameter(CALLER_IS_SYNCADAPTER, "true")
-          .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_NAME, localAccountName)
-          .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_TYPE, CalendarContract.ACCOUNT_TYPE_LOCAL)
-          .build()
+                .appendQueryParameter(CALLER_IS_SYNCADAPTER, "true")
+                .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_NAME, localAccountName)
+                .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_TYPE, CalendarContract.ACCOUNT_TYPE_LOCAL)
+                .build()
         val values = ContentValues()
         values.put(CalendarContract.Calendars.NAME, calendarName)
         values.put(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME, calendarName)
@@ -376,8 +376,7 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
                     insertReminders(event.reminders, eventId, contentResolver!!)
                 }
             }
-            job.invokeOnCompletion {
-                cause ->
+            job.invokeOnCompletion { cause ->
                 if (cause == null) {
                     _registrar!!.activity().runOnUiThread {
                         finishWithSuccess(eventId.toString(), pendingChannelResult)
@@ -393,7 +392,7 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
 
     private fun deleteExistingReminders(contentResolver: ContentResolver?, eventId: Long) {
         val cursor = CalendarContract.Reminders.query(contentResolver, eventId, arrayOf(
-          CalendarContract.Reminders._ID
+                CalendarContract.Reminders._ID
         ))
         while (cursor != null && cursor.moveToNext()) {
             var reminderUri: Uri? = null
@@ -425,7 +424,6 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
 
     private fun buildEventContentValues(event: Event, calendarId: String): ContentValues {
         val values = ContentValues()
-        val duration: String? = null
         values.put(Events.ALL_DAY, event.allDay)
 
         if (event.allDay) {
@@ -458,6 +456,13 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             values.put(Events.DTEND, calendarEnd.timeInMillis)
             values.put(Events.EVENT_TIMEZONE, utcTimeZone.id)
             values.put(Events.EVENT_END_TIMEZONE, utcTimeZone.id)
+
+            if (event.recurrenceRule != null && calendarStart.get(java.util.Calendar.DAY_OF_MONTH) < calendarEnd.get(java.util.Calendar.DAY_OF_MONTH)) {
+                values.remove(Events.DTEND)
+                values.remove(Events.EVENT_END_TIMEZONE)
+                val day = calendarEnd.get(java.util.Calendar.DAY_OF_MONTH) - calendarStart.get(java.util.Calendar.DAY_OF_MONTH)
+                values.put(Events.DURATION, "P" + day + "D")
+            }
         } else {
             values.put(Events.DTSTART, event.start!!)
             values.put(Events.EVENT_TIMEZONE, getTimeZone(event.startTimeZone).id)
@@ -470,11 +475,10 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
         values.put(Events.EVENT_LOCATION, event.location)
         values.put(Events.CUSTOM_APP_URI, event.url)
         values.put(Events.CALENDAR_ID, calendarId)
-        values.put(Events.DURATION, duration)
         values.put(Events.AVAILABILITY, getAvailability(event.availability))
 
         if (event.recurrenceRule != null) {
-            val recurrenceRuleParams = buildRecurrenceRuleParams(event.recurrenceRule!!)
+            val recurrenceRuleParams = buildRecurrenceRuleParams(event.start!!, event.recurrenceRule!!)
             values.put(Events.RRULE, recurrenceRuleParams)
         }
         return values
@@ -510,13 +514,13 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
                 put(CalendarContract.Attendees.ATTENDEE_NAME, it.name)
                 put(CalendarContract.Attendees.ATTENDEE_EMAIL, it.emailAddress)
                 put(
-                  CalendarContract.Attendees.ATTENDEE_RELATIONSHIP,
-                  CalendarContract.Attendees.RELATIONSHIP_ATTENDEE
+                        CalendarContract.Attendees.ATTENDEE_RELATIONSHIP,
+                        CalendarContract.Attendees.RELATIONSHIP_ATTENDEE
                 )
                 put(CalendarContract.Attendees.ATTENDEE_TYPE, it.role)
                 put(
-                  CalendarContract.Attendees.ATTENDEE_STATUS,
-                  CalendarContract.Attendees.ATTENDEE_STATUS_INVITED
+                        CalendarContract.Attendees.ATTENDEE_STATUS,
+                        CalendarContract.Attendees.ATTENDEE_STATUS_INVITED
                 )
                 put(CalendarContract.Attendees.EVENT_ID, eventId)
             }
@@ -778,11 +782,11 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
         }
 
         return Attendee(
-          cursor.getString(ATTENDEE_EMAIL_INDEX),
-          cursor.getString(ATTENDEE_NAME_INDEX),
-          cursor.getInt(ATTENDEE_TYPE_INDEX),
-          cursor.getInt(ATTENDEE_STATUS_INDEX),
-          cursor.getInt(ATTENDEE_RELATIONSHIP_INDEX) == CalendarContract.Attendees.RELATIONSHIP_ORGANIZER)
+                cursor.getString(ATTENDEE_EMAIL_INDEX),
+                cursor.getString(ATTENDEE_NAME_INDEX),
+                cursor.getInt(ATTENDEE_TYPE_INDEX),
+                cursor.getInt(ATTENDEE_STATUS_INDEX),
+                cursor.getInt(ATTENDEE_RELATIONSHIP_INDEX) == CalendarContract.Attendees.RELATIONSHIP_ORGANIZER)
     }
 
     private fun parseReminderRow(cursor: Cursor?): Reminder? {
@@ -871,7 +875,7 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
         return api <= android.os.Build.VERSION.SDK_INT
     }
 
-    private fun buildRecurrenceRuleParams(recurrenceRule: RecurrenceRule): String {
+    private fun buildRecurrenceRuleParams(startDate: Long, recurrenceRule: RecurrenceRule): String {
         val frequencyParam = when (recurrenceRule.recurrenceFrequency) {
             RecurrenceFrequency.DAILY -> Freq.DAILY
             RecurrenceFrequency.WEEKLY -> Freq.WEEKLY
@@ -883,10 +887,10 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             rr.interval = recurrenceRule.interval!!
         }
 
-        if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.WEEKLY ||
-            recurrenceRule.weekOfMonth != null && (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.MONTHLY || recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY)) {
-            rr.byDayPart = buildByDayPart(recurrenceRule)
-        }
+//        if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.WEEKLY ||
+//                recurrenceRule.weekOfMonth != null && (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.MONTHLY || recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY)) {
+//            rr.byDayPart = buildByDayPart(recurrenceRule)
+//        }
 
         if (recurrenceRule.totalOccurrences != null) {
             rr.count = recurrenceRule.totalOccurrences!!
@@ -898,16 +902,33 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             rr.until = DateTime(calendar.timeZone, recurrenceRule.endDate!!)
         }
 
-        var rrString = rr.toString()
+//        var rrString = rr.toString()
 
-        if (recurrenceRule.monthOfYear != null && recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY) {
-            rrString = rrString.addPartWithValues(BYMONTH_PART, recurrenceRule.monthOfYear)
+//        if (recurrenceRule.monthOfYear != null && recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY) {
+//            rrString = rrString.addPartWithValues(BYMONTH_PART, recurrenceRule.monthOfYear)
+//        }
+//
+//        if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.MONTHLY || recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY) {
+//            if (recurrenceRule.weekOfMonth == null) {
+//                rrString = rrString.addPartWithValues(BYMONTHDAY_PART, recurrenceRule.dayOfMonth)
+//            }
+//        }
+
+        rr.weekStart = Weekday.SU
+
+        val calendarStart = java.util.Calendar.getInstance()
+        calendarStart.timeInMillis = startDate
+
+        if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.WEEKLY) {
+            rr.byDayPart = listOf(org.dmfs.rfc5545.recur.RecurrenceRule.WeekdayNum(0, Weekday.values()[calendarStart.get(java.util.Calendar.DAY_OF_WEEK) - 1]))
+        } else if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.MONTHLY) {
+            rr.setByPart(org.dmfs.rfc5545.recur.RecurrenceRule.Part.BYMONTHDAY, calendarStart.get(java.util.Calendar.DAY_OF_MONTH))
         }
 
-        if (recurrenceRule.recurrenceFrequency == RecurrenceFrequency.MONTHLY || recurrenceRule.recurrenceFrequency == RecurrenceFrequency.YEARLY) {
-            if (recurrenceRule.weekOfMonth == null) {
-                rrString = rrString.addPartWithValues(BYMONTHDAY_PART, recurrenceRule.dayOfMonth)
-            }
+        var rrString = rr.toString();
+
+        if (recurrenceRule.interval == null || recurrenceRule.interval == 1) {
+            rrString = rrString.addPartWithValues("INTERVAL", 1)
         }
 
         return rrString
