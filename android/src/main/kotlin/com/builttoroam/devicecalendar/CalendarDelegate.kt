@@ -462,6 +462,9 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
                 values.remove(Events.EVENT_END_TIMEZONE)
                 val day = calendarEnd.get(java.util.Calendar.DAY_OF_MONTH) - calendarStart.get(java.util.Calendar.DAY_OF_MONTH)
                 values.put(Events.DURATION, "P" + day + "D")
+            } else {
+                val duration: String? = null
+                values.put(Events.DURATION, duration)
             }
         } else {
             values.put(Events.DTSTART, event.start!!)
@@ -469,6 +472,9 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
 
             values.put(Events.DTEND, event.end!!)
             values.put(Events.EVENT_END_TIMEZONE, getTimeZone(event.endTimeZone).id)
+
+            val duration: String? = null
+            values.put(Events.DURATION, duration)
         }
         values.put(Events.TITLE, event.title)
         values.put(Events.DESCRIPTION, event.description)
