@@ -457,10 +457,11 @@ class CalendarDelegate : PluginRegistry.RequestPermissionsResultListener {
             values.put(Events.EVENT_TIMEZONE, utcTimeZone.id)
             values.put(Events.EVENT_END_TIMEZONE, utcTimeZone.id)
 
-            if (event.recurrenceRule != null && calendarStart.get(java.util.Calendar.DAY_OF_MONTH) < calendarEnd.get(java.util.Calendar.DAY_OF_MONTH)) {
-                values.remove(Events.DTEND)
-                values.remove(Events.EVENT_END_TIMEZONE)
-                val day = calendarEnd.get(java.util.Calendar.DAY_OF_MONTH) - calendarStart.get(java.util.Calendar.DAY_OF_MONTH)
+            if (event.recurrenceRule != null) {
+                val end: String? = null
+                values.put(Events.DTEND, end)
+                values.put(Events.EVENT_END_TIMEZONE, end)
+                val day = (calendarEnd.timeInMillis - calendarStart.timeInMillis) / (1000 * 60 * 60 * 24)
                 values.put(Events.DURATION, "P" + day + "D")
             } else {
                 val duration: String? = null
